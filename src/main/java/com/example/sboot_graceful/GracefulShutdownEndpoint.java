@@ -17,8 +17,6 @@ public class GracefulShutdownEndpoint {
 
     @WriteOperation
     public void shutdown() {
-
-
         System.out.println("teste");
     }
 
