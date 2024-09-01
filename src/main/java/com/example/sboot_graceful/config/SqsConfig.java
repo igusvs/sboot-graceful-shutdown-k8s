@@ -1,36 +1,45 @@
 package com.example.sboot_graceful.config;
 
 
-import io.awspring.cloud.sqs.listener.QueueNotFoundStrategy;
-import io.awspring.cloud.sqs.operations.SqsTemplate;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.client.builder.AwsClientBuilder;
+import com.amazonaws.regions.Region;
+import com.amazonaws.services.sqs.AmazonSQSAsync;
+import com.amazonaws.services.sqs.AmazonSQSAsyncClientBuilder;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.cloud.aws.messaging.config.annotation.EnableSqs;
+import org.springframework.cloud.aws.messaging.core.QueueMessagingTemplate;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
-import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
-import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.sqs.SqsAsyncClient;
+import org.springframework.context.annotation.Primary;
 
-import java.net.URI;
 
 @Configuration
+@EnableSqs
 public class SqsConfig {
 
-
     @Bean
-    public SqsTemplate sqsTemplate(SqsAsyncClient sqsAsyncClient) {
-        return SqsTemplate.builder()
-                .sqsAsyncClient(sqsAsyncClient)
-                .configure(o -> o.queueNotFoundStrategy(QueueNotFoundStrategy.FAIL))
+    @Primary
+    public AmazonSQSAsync amazonSQSAsync() {
+        return AmazonSQSAsyncClientBuilder.standard()
+                .withEndpointConfiguration(
+                        new AwsClientBuilder.EndpointConfiguration("http://localhost:4566", "us-east-1"))
+                .withCredentials(
+                        new AWSStaticCredentialsProvider(
+                                new BasicAWSCredentials("accessKeyIdFake", "secretAccessKeyFake")))
                 .build();
     }
 
     @Bean
-    public SqsAsyncClient sqsAsyncClient() {
-        return SqsAsyncClient.builder()
-                .credentialsProvider(StaticCredentialsProvider.create(AwsBasicCredentials.create("test", "test")))
-                .endpointOverride(URI.create("http://localhost:4566"))
-                .region(Region.SA_EAST_1)
-                .build();
+    public QueueMessagingTemplate queueMessagingTemplate() {
+
+        return new QueueMessagingTemplate(amazonSQSAsync());
     }
+
+    @Bean
+    public ObjectMapper objectMapper() {
+        return new ObjectMapper();
+    }
+
 }
